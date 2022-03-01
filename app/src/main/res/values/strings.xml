@@ -4,4 +4,11 @@
     <string name="save_note_button">Save</string>
     <string name="hint_title">Add title</string>
     <string name="hint_content">Add content</string>
+    <string name="loading">Loading…</string>
+    <string name="error_note_fetch">Unable to retrieve saved note!</string>
+    <string name="error_title">Please enter title</string>
+    <string name="error_content">Please enter content description</string>
+    <string name="error_data">Oops! Something went wrong accessing your data</string>
+    <string name="new_note">Add Note</string>
+    <string name="edit_note">Edit Note</string>
 </resources>

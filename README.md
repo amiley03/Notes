@@ -13,6 +13,3 @@ Starter code for notes app
 - Make the API to fetch Note from storage asynchronous
 - Add edit note feature, tapping on a note in ListView should open the same Add note screen but in edit mode.
 - Sort the notes by last updated time whenever a note is added/edited.
-
-
-

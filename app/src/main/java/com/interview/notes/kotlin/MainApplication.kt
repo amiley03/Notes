@@ -1,16 +1,17 @@
 package com.interview.notes.kotlin
 
 import android.app.Application
+import com.interview.notes.BuildConfig
+import dagger.hilt.android.HiltAndroidApp
+import timber.log.Timber
 
+@HiltAndroidApp
 class MainApplication : Application() {
 
-    private var notesStore: NotesStore? = null
-
-    fun getNotesStore(): NotesStore? {
-        if (notesStore == null) {
-            notesStore = NotesStoreImpl(applicationContext)
+    override fun onCreate() {
+        super.onCreate()
+        if (BuildConfig.DEBUG) {
+            Timber.plant(Timber.DebugTree())
         }
-        return notesStore
     }
-
 }
