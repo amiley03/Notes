@@ -7,6 +7,7 @@ An example of using MVVM Architecture, ViewDataBinding and Kotlin Coroutines
 - Kotlin Flow used in data repository layer for observing data changes
 - Couroutines used with ViewModelScope to make async calls and handle clean up
 - UseCase and Mapper used for separating business logic
+- Dependency Injection using Dagger Hilt
 
 
 #### Tests:
