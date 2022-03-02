@@ -1,8 +1,6 @@
 package com.interview.notes
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
-import androidx.test.internal.util.ReflectionUtil
-import com.interview.notes.kotlin.domain.mappers.NoteItemMapper
 import com.interview.notes.kotlin.model.Note
 import com.interview.notes.kotlin.model.data.local.NotesStore
 import com.interview.notes.kotlin.model.repo.NotesRepository
@@ -14,12 +12,11 @@ import com.interview.notes.kotlin.viewmodel.UIState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.test.TestCoroutineDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runBlockingTest
 import kotlinx.coroutines.test.setMain
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
@@ -29,11 +26,8 @@ import org.junit.rules.TestWatcher
 import org.junit.runner.Description
 import org.mockito.Mockito.`when`
 import org.mockito.Mockito.verify
-import org.mockito.internal.util.reflection.ReflectionMemberAccessor
-import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
-import org.robolectric.util.ReflectionHelpers.setField
 import java.util.UUID.randomUUID
 
 @ExperimentalCoroutinesApi
@@ -61,17 +55,6 @@ class NotesTest {
 
     }
 
-    private fun setPrivateData(notesViewModel: NotesViewModel) {
-        val field = NotesViewModel::class.java.getDeclaredField("noteMap")
-        field.isAccessible = true
-        val testMap = mutableMapOf<String, NoteItemViewModel>()
-        testNotes.forEach {
-            testMap[it.id] = NoteItemMapper().invoke(it)
-        }
-
-        field.set(notesViewModel, testMap)
-    }
-
     private val testNotes: List<Note> by lazy {
         val list = mutableListOf<Note>()
         for (i in 0..6) {
@@ -80,25 +63,25 @@ class NotesTest {
         list
     }
 
-    private val flow = MutableSharedFlow<Note>()
-
     @Test
     fun `verify NotesViewModel UIState Loaded`() = runBlockingTest {
-        val notesViewModel = NotesViewModel(mockRepository)
+        val flow = MutableSharedFlow<Note>()
+        val listFlow = MutableSharedFlow<List<Note>>()
 
         // return test data when repo method is called
-        setPrivateData(notesViewModel)
         `when`(mockRepository.notes).thenReturn(flow)
+        `when`(mockRepository.noteList).thenReturn(listFlow)
 
+        val notesViewModel = NotesViewModel(mockRepository)
+
+        // test initial load
         notesViewModel.loadData()
 
         // verify the repo method is called
         verify(mockRepository).loadNotes()
 
         // emit test data
-        testNotes.forEach {
-            flow.emit(it)
-        }
+        listFlow.emit(testNotes)
 
         // verify data is present
         assert(notesViewModel.notes.isNotEmpty())
@@ -108,6 +91,19 @@ class NotesTest {
         sorted.forEachIndexed { index, note ->
             assertTrue(note.id == notesViewModel.notes[index].noteId)
         }
+
+        // verify the live data state
+        assertEquals(UIState.Loaded, notesViewModel.uiState.value)
+
+        // test single note update
+        val newNote = Note("New Note", "test content")
+        flow.emit(newNote)
+
+        // verify the live data state
+        assertTrue(notesViewModel.uiState.value is UIState.Updated)
+
+        // verify the new note is at the beginning of the list
+        assertTrue(newNote.id == notesViewModel.notes[0].noteId)
     }
 
     @Test
