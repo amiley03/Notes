@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 
 class NoteItemViewModel (
     val title: String,
+    val content: String,
     val noteId: String,
     val timeStamp: String,
     var clickListener:((String) -> Unit)? = null

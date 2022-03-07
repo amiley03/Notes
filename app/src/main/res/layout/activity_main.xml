@@ -7,24 +7,7 @@
 
     </data>
 
-    <RelativeLayout
+    <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        tools:context=".java.MainActivity">
-
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/notes_list"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
-
-        <Button
-            android:id="@+id/btn_add_note"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_alignParentBottom="true"
-            android:text="@string/add_note_button" />
-
-    </RelativeLayout>
-
+        android:layout_height="match_parent"/>
 </layout>

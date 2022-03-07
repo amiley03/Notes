@@ -18,8 +18,6 @@
             </intent-filter>
         </activity>
 
-        <activity android:name="com.interview.notes.kotlin.ui.AddNoteActivity"/>
-
     </application>
 
 </manifest>

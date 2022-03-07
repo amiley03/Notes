@@ -1,8 +1,15 @@
 package com.interview.notes.kotlin.ui
 
+import android.os.Bundle
+import androidx.activity.viewModels
+import androidx.annotation.Nullable
+import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Observer
+import androidx.lifecycle.ViewModelProvider
 import com.interview.notes.R
 import com.interview.notes.databinding.ActivityMainBinding
+import com.interview.notes.kotlin.ui.NoteDetailsFragment.Companion.DETAILS_FRAGMENT_TAG
+import com.interview.notes.kotlin.ui.NotesListFragment.Companion.LIST_FRAGMENT_TAG
 import com.interview.notes.kotlin.viewmodel.NotesViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import com.interview.notes.kotlin.ui.adapter.NotesAdapter
@@ -13,52 +20,21 @@ import com.interview.notes.kotlin.viewmodel.UIState
  * Main {@link android.app.Activity} which displays a list of existing Notes.
  */
 @AndroidEntryPoint
-class MainActivity : BaseActivityVM<NotesViewModel, ActivityMainBinding>() {
+class MainActivity : AppCompatActivity() {
 
-    override val layoutId = R.layout.activity_main
-    override val viewModelClass = NotesViewModel::class.java
+    val viewModel: NotesViewModel by viewModels()
 
-    private val notesAdapter: NotesAdapter = NotesAdapter { id ->
-        handleNoteItemCLicked(id)
+    override fun onCreate(@Nullable savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        supportFragmentManager
+            .beginTransaction()
+            .add(android.R.id.content, NotesListFragment.newInstance(), LIST_FRAGMENT_TAG)
+            .commit()
     }
 
-    private val observer by lazy {
-        Observer<UIState> { uiState ->
-            when(uiState) {
-                is UIState.Updated -> insertNewItem(uiState.noteItem)
-                else -> Unit
-            }
-        }
-    }
-
-    private fun insertNewItem(item: NoteItemViewModel) {
-        notesAdapter.updateItem(item)
-    }
-
-    override fun setUpViews() {
-        binding.notesList.adapter = notesAdapter
-        binding.btnAddNote.setOnClickListener { openNoteDetails() }
-        viewModel.uiState.observe(this, observer)
-    }
-
-    override fun updateUI() {
-        notesAdapter.setNotes(viewModel.notes)
-    }
-
-    private fun openNoteDetails(noteId: String? = null) {
-        startActivity(AddNoteActivity.build(this, noteId))
-    }
-
-    private fun handleNoteItemCLicked(noteId: String) {
-        openNoteDetails(noteId)
-    }
-
-    override fun handleError(errorMessageId: Int) {
-        showMessage(errorMessageId)
-    }
-
-    override fun handleLoading() {
-       showMessage(R.string.loading)
+    override fun onBackPressed() {
+        viewModel.noteId = null
+        super.onBackPressed()
     }
 
 }

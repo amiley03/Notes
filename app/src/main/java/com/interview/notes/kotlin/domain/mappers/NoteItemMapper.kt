@@ -8,6 +8,7 @@ class NoteItemMapper {
     operator fun invoke(note: Note): NoteItemViewModel =
         NoteItemViewModel(
             title = note.title,
+            content = note.content,
             noteId = note.id,
             timeStamp = note.timeStamp
         )
@@ -16,6 +17,7 @@ class NoteItemMapper {
         notes.map { note ->
             NoteItemViewModel(
                 title = note.title,
+                content = note.content,
                 noteId = note.id,
                 timeStamp = note.timeStamp
             )

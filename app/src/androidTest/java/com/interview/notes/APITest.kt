@@ -9,8 +9,8 @@ import androidx.test.espresso.intent.matcher.IntentMatchers.hasComponent
 import androidx.test.espresso.matcher.ViewMatchers
 import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.interview.notes.kotlin.ui.AddNoteActivity
 import com.interview.notes.kotlin.ui.MainActivity
+import com.interview.notes.kotlin.ui.NoteDetailsFragment
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -25,6 +25,6 @@ class InstrumentedTest {
     fun testDetailsScreenOpens() {
         Intents.init()
         onView(ViewMatchers.withId(R.id.btn_add_note)).perform(ViewActions.click())
-        intended(hasComponent(AddNoteActivity::class.java.name))
+        intended(hasComponent(NoteDetailsFragment::class.java.name))
     }
 }

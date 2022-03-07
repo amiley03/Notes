@@ -2,13 +2,13 @@ package com.interview.notes
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import com.interview.notes.kotlin.model.Note
-import com.interview.notes.kotlin.model.data.local.NotesStore
+import com.interview.notes.kotlin.model.data.local.NoteDao
 import com.interview.notes.kotlin.model.repo.NotesRepository
 import com.interview.notes.kotlin.model.repo.NotesRepositoryImpl
-import com.interview.notes.kotlin.viewmodel.NoteDetailsViewModel
-import com.interview.notes.kotlin.viewmodel.NoteItemViewModel
 import com.interview.notes.kotlin.viewmodel.NotesViewModel
 import com.interview.notes.kotlin.viewmodel.UIState
+import dagger.Provides
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -29,6 +29,7 @@ import org.mockito.Mockito.verify
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import java.util.UUID.randomUUID
+import javax.inject.Singleton
 
 @ExperimentalCoroutinesApi
 class NotesTest {
@@ -40,19 +41,16 @@ class NotesTest {
     var rule: TestRule = InstantTaskExecutorRule()
 
     private lateinit var mockRepository: NotesRepository
-    private lateinit var mockNoteStore: NotesStore
 
     private lateinit var noteRepository: NotesRepository
-    private lateinit var noteDetailViewModel: NoteDetailsViewModel
+
+    private lateinit var mockDao: NoteDao
 
     @Before
     fun setup() {
         mockRepository = mock()
-        mockNoteStore = mock()
-
-        noteRepository = NotesRepositoryImpl(mockNoteStore)
-        noteDetailViewModel = NoteDetailsViewModel(mockRepository)
-
+        mockDao = mock()
+        noteRepository = NotesRepositoryImpl(mockDao)
     }
 
     private val testNotes: List<Note> by lazy {
@@ -65,20 +63,18 @@ class NotesTest {
 
     @Test
     fun `verify NotesViewModel UIState Loaded`() = runBlockingTest {
-        val flow = MutableSharedFlow<Note>()
         val listFlow = MutableSharedFlow<List<Note>>()
 
         // return test data when repo method is called
-        `when`(mockRepository.notes).thenReturn(flow)
-        `when`(mockRepository.noteList).thenReturn(listFlow)
+        `when`(mockRepository.getAllNotes()).thenReturn(listFlow)
 
-        val notesViewModel = NotesViewModel(mockRepository)
+        val notesViewModel = NotesViewModel(mockRepository, TestCoroutineDispatcher())
 
         // test initial load
-        notesViewModel.loadData()
+        notesViewModel.loadNotes()
 
         // verify the repo method is called
-        verify(mockRepository).loadNotes()
+        verify(mockRepository).getAllNotes()
 
         // emit test data
         listFlow.emit(testNotes)
@@ -97,60 +93,67 @@ class NotesTest {
 
         // test single note update
         val newNote = Note("New Note", "test content")
-        flow.emit(newNote)
+        listFlow.emit(listOf(newNote))
 
         // verify the live data state
         assertTrue(notesViewModel.uiState.value is UIState.Updated)
 
         // verify the new note is at the beginning of the list
-        assertTrue(newNote.id == notesViewModel.notes[0].noteId)
+        assertEquals(newNote.id, notesViewModel.notes[0].noteId)
     }
 
     @Test
     fun `verify NotesViewModel UIState Error`() = runBlockingTest {
-        val notesViewModel = NotesViewModel(mockRepository)
-       `when`(mockRepository.loadNotes()).then { throw Exception("test exception") }
-        notesViewModel.loadData()
-        assert(notesViewModel.uiState.value is UIState.Error)
+        val notesViewModel = NotesViewModel(mockRepository, TestCoroutineDispatcher())
+       `when`(mockRepository.getAllNotes()).then { throw Exception("test exception") }
+        notesViewModel.loadNotes()
+        assertEquals(UIState.Error::class.java, notesViewModel.uiState.value?.javaClass)
     }
 
     @Test
     fun `verify note detail view model test UIState Loaded new note`() = runBlockingTest {
         val id = randomUUID().toString()
-        val testNote = Note("", "")
-        // return test data when repo method is called
-        `when`(mockRepository.fetchNote(id)).thenReturn(testNote)
+        val flow = MutableSharedFlow<Note>()
 
-        noteDetailViewModel.loadData()
+        val notesViewModel = NotesViewModel(mockRepository, TestCoroutineDispatcher())
+
+        // return test data when repo method is called
+        `when`(mockRepository.fetchNote(id)).thenReturn(flow)
+
+        notesViewModel.loadSavedNote()
 
         // verify for new note fetch is not called
         verify(mockRepository, times(0)).fetchNote(id)
 
         // verify the live data value is correct
-        assert(noteDetailViewModel.uiState.value is UIState.Loaded)
+        assertEquals(UIState.NewNote, notesViewModel.uiState.value)
 
         // verify correct screen title
-        assert(noteDetailViewModel.screenNameId == R.string.new_note)
+        assertEquals(R.string.new_note, notesViewModel.screenNameId)
     }
 
     @Test
     fun `note detail view model test UIState Loaded edit note`() = runBlockingTest {
-        val id = randomUUID().toString()
         val testNote = Note("","")
-        // return test data when repo method is called
-        `when`(mockRepository.fetchNote(id)).thenReturn(testNote)
+        val flow = MutableSharedFlow<Note>()
 
-        noteDetailViewModel.noteId = id
-        noteDetailViewModel.loadData()
+        val notesViewModel = NotesViewModel(mockRepository, TestCoroutineDispatcher())
+
+        // return test data when repo method is called
+        `when`(mockRepository.fetchNote(testNote.id)).thenReturn(flow)
+
+        notesViewModel.noteId = testNote.id
+        notesViewModel.loadSavedNote()
+        flow.emit(testNote)
 
         // verify the repo method is called for editing note
-        verify(mockRepository, times(1)).fetchNote(id)
+        verify(mockRepository, times(1)).fetchNote(testNote.id)
 
         // verify the live data value is correct
-        assert(noteDetailViewModel.uiState.value is UIState.Loaded)
+        assertTrue(notesViewModel.uiState.value is UIState.EditNote)
 
         // verify correct screen title
-        assert(noteDetailViewModel.screenNameId == R.string.edit_note)
+        assertEquals(R.string.edit_note, notesViewModel.screenNameId)
     }
 
 }
@@ -168,4 +171,9 @@ class CoroutineTestRule(private val testDispatcher: TestCoroutineDispatcher = Te
         testDispatcher.cleanupTestCoroutines()
     }
 }
+
+@ExperimentalCoroutinesApi
+@Singleton
+@Provides
+fun provideDispatchers(): CoroutineDispatcher = TestCoroutineDispatcher()
 
