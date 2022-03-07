@@ -13,3 +13,7 @@ An example of using MVVM Architecture, ViewDataBinding and Kotlin Coroutines
 #### Tests:
 - Test coverage for view model, repo and data store layers
 - Basic UI smoke test using espresso
+
+
+#### App Architecture Design
+![alt text](https://github.com/amiley03/Notes/blob/master/design/app_design.png)
