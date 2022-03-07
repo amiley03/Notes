@@ -36,7 +36,6 @@ class NotesListFragment : BaseFragment<NotesViewModel, FragmentNotesListBinding>
         binding.notesList.adapter = notesAdapter
         binding.btnAddNote.setOnClickListener { openNoteDetails() }
         viewModel.uiState.observe(this, observer)
-        viewModel.loadNotes()
     }
 
     private fun updateUI() {

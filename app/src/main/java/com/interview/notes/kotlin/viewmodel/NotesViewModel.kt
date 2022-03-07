@@ -1,8 +1,10 @@
 package com.interview.notes.kotlin.viewmodel
 
 import androidx.lifecycle.viewModelScope
+import com.interview.notes.R
 import com.interview.notes.kotlin.domain.mappers.NoteItemMapper
 import com.interview.notes.kotlin.domain.usecases.OrderLatestNote
+import com.interview.notes.kotlin.model.Note
 import com.interview.notes.kotlin.model.repo.NotesRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineDispatcher
@@ -12,9 +14,11 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.shareIn
+import kotlinx.coroutines.flow.single
 
 @HiltViewModel
 class NotesViewModel @Inject constructor(private val repository: NotesRepository, dispatcherIO: CoroutineDispatcher = Dispatchers.IO) : BaseViewModel(dispatcherIO) {
@@ -27,27 +31,25 @@ class NotesViewModel @Inject constructor(private val repository: NotesRepository
     var content: String = ""
     var screenNameId = R.string.new_note
 
-    fun loadNotes() {
+    init {
         loadAsyncAndUpdateUI {
+            // Observe notes and update the UI when we find new notes not part of the noteMap data set
             repository.getAllNotes()
-               .shareIn(viewModelScope, SharingStarted.WhileSubscribed())
+                .shareIn(viewModelScope, SharingStarted.WhileSubscribed())
                 .map { notes ->
-                    val mapped = NoteItemMapper().invoke(notes).toMutableList()
-
-                    // Filter out any note we already have in out data set
-                    noteMap.values.forEach { item ->
-                        mapped.removeIf { it.timeStamp == item.timeStamp }
-                    }
-                    mapped.toList()
-                }.onEach { notesMapped ->
-                    notesMapped.forEach { note ->
+                    // Filter out any note we already have in our data set - Runtime O(n) iterating over O(n) notes and using hash map lookup O(1)
+                    val newNotes = notes.filter { !noteMap.containsKey(it.id) || noteMap[it.id]?.timeStamp != it.timeStamp }
+                    Timber.d("New notes ${newNotes.size}")
+                    NoteItemMapper().invoke(newNotes)
+                }.onEach { newNotes ->
+                    newNotes.forEach { note ->
                         Timber.d("Updating Note to list: ${note.title}")
                         noteMap[note.noteId] = note
                     }
-                    if (notesMapped.size > 1) {
+                    if (newNotes.size > 1) {
                         updateUIState(UIState.Loaded)
-                    } else if (notesMapped.isNotEmpty()) {
-                        updateUIState(UIState.Updated(notesMapped[0]))
+                    } else if (newNotes.isNotEmpty()) {
+                        updateUIState(UIState.Updated(newNotes[0]))
                     }
                 }
                 .collect()
@@ -56,31 +58,21 @@ class NotesViewModel @Inject constructor(private val repository: NotesRepository
 
     fun loadSavedNote() {
         noteId?.let { id ->
-            viewModelScope.launch {
+           loadAsyncAndUpdateUI {
                 // Editing existing note
-                repository.fetchNote(id)
-                    .map { note ->
-                        NoteItemMapper().invoke(note)
-                    }.onEach { noteItem ->
-                        screenNameId = R.string.edit_note
-                        updateUIState(UIState.EditNote(noteItem))
-                    }
-                    .collect()
+                val note = repository.fetchNote(id)
+                val noteVM = NoteItemMapper().invoke(note)
+                screenNameId = R.string.edit_note
+                updateUIState(UIState.EditNote(noteVM))
             }
         } ?: updateUIState(UIState.NewNote)
     }
 
-    private fun observeNoteUpdates() {
-        viewModelScope.launch {
-            repository.notes
-                .map { note ->
-                    NoteItemMapper().invoke(note)
-                }
-                .collect { noteVM ->
-                    Timber.d("Updating Note to list: ${noteVM.title}")
-                    noteMap[noteVM.noteId] = noteVM
-                    updateUIState(UIState.Updated(noteVM))
-                }
+    fun handleSaveNoteClicked() {
+        when {
+            title.isEmpty() -> updateUIState(UIState.Error(R.string.error_title))
+            content.isEmpty() -> updateUIState(UIState.Error(R.string.error_content))
+            else -> saveNote()
         }
     }
 

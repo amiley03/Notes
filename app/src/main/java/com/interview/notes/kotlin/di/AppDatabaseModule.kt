@@ -31,7 +31,6 @@ class AppDatabaseModule {
         ).build()
     }
 
-
     @Singleton
     @Provides
     fun provideDispatchers(): CoroutineDispatcher = Dispatchers.IO

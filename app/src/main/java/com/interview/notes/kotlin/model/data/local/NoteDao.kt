@@ -29,5 +29,5 @@ interface NoteDao {
     fun delete(user: Note)
 
     @Query("SELECT * FROM notes WHERE id IS :noteId LIMIT 1")
-    fun findById(noteId: String): Flow<Note>
+    fun findById(noteId: String): Note
 }

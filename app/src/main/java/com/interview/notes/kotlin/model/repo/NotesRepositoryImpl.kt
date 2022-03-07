@@ -14,7 +14,7 @@ import javax.inject.Singleton
 @Singleton
 class NotesRepositoryImpl @Inject constructor(private val noteDao: NoteDao) : NotesRepository {
 
-    override suspend fun fetchNote(noteId: String): Flow<Note> {
+    override suspend fun fetchNote(noteId: String): Note {
         return noteDao.findById(noteId)
     }
 

@@ -7,8 +7,6 @@ import com.interview.notes.kotlin.model.repo.NotesRepository
 import com.interview.notes.kotlin.model.repo.NotesRepositoryImpl
 import com.interview.notes.kotlin.viewmodel.NotesViewModel
 import com.interview.notes.kotlin.viewmodel.UIState
-import dagger.Provides
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -29,7 +27,6 @@ import org.mockito.Mockito.verify
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import java.util.UUID.randomUUID
-import javax.inject.Singleton
 
 @ExperimentalCoroutinesApi
 class NotesTest {
@@ -171,9 +168,3 @@ class CoroutineTestRule(private val testDispatcher: TestCoroutineDispatcher = Te
         testDispatcher.cleanupTestCoroutines()
     }
 }
-
-@ExperimentalCoroutinesApi
-@Singleton
-@Provides
-fun provideDispatchers(): CoroutineDispatcher = TestCoroutineDispatcher()
-
