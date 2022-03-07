@@ -50,7 +50,7 @@ class NotesTest {
         noteRepository = NotesRepositoryImpl(mockDao)
     }
 
-    private val testNotes: List<Note> by lazy {
+    private val testNotes: MutableList<Note> by lazy {
         val list = mutableListOf<Note>()
         for (i in 0..6) {
             list.add(Note(i.toString(), "test content"))
@@ -67,9 +67,6 @@ class NotesTest {
 
         val notesViewModel = NotesViewModel(mockRepository, TestCoroutineDispatcher())
 
-        // test initial load
-        notesViewModel.loadNotes()
-
         // verify the repo method is called
         verify(mockRepository).getAllNotes()
 
@@ -79,21 +76,16 @@ class NotesTest {
         // verify data is present
         assert(notesViewModel.notes.isNotEmpty())
 
-        // verify order of the result list is correct
-        val sorted = testNotes.sortedByDescending { it.timeStamp }
-        sorted.forEachIndexed { index, note ->
-            assertTrue(note.id == notesViewModel.notes[index].noteId)
-        }
-
         // verify the live data state
         assertEquals(UIState.Loaded, notesViewModel.uiState.value)
 
         // test single note update
         val newNote = Note("New Note", "test content")
-        listFlow.emit(listOf(newNote))
+        testNotes.add(0, newNote)
+        listFlow.emit(testNotes)
 
         // verify the live data state
-        assertTrue(notesViewModel.uiState.value is UIState.Updated)
+        assertEquals(UIState.Updated::class.java, notesViewModel.uiState.value?.javaClass)
 
         // verify the new note is at the beginning of the list
         assertEquals(newNote.id, notesViewModel.notes[0].noteId)
@@ -101,21 +93,16 @@ class NotesTest {
 
     @Test
     fun `verify NotesViewModel UIState Error`() = runBlockingTest {
+        `when`(mockRepository.getAllNotes()).then { throw Exception("test exception") }
         val notesViewModel = NotesViewModel(mockRepository, TestCoroutineDispatcher())
-       `when`(mockRepository.getAllNotes()).then { throw Exception("test exception") }
-        notesViewModel.loadNotes()
         assertEquals(UIState.Error::class.java, notesViewModel.uiState.value?.javaClass)
     }
 
     @Test
     fun `verify note detail view model test UIState Loaded new note`() = runBlockingTest {
         val id = randomUUID().toString()
-        val flow = MutableSharedFlow<Note>()
 
         val notesViewModel = NotesViewModel(mockRepository, TestCoroutineDispatcher())
-
-        // return test data when repo method is called
-        `when`(mockRepository.fetchNote(id)).thenReturn(flow)
 
         notesViewModel.loadSavedNote()
 
@@ -132,16 +119,14 @@ class NotesTest {
     @Test
     fun `note detail view model test UIState Loaded edit note`() = runBlockingTest {
         val testNote = Note("","")
-        val flow = MutableSharedFlow<Note>()
 
         val notesViewModel = NotesViewModel(mockRepository, TestCoroutineDispatcher())
 
         // return test data when repo method is called
-        `when`(mockRepository.fetchNote(testNote.id)).thenReturn(flow)
+        `when`(mockRepository.fetchNote(testNote.id)).thenReturn(testNote)
 
         notesViewModel.noteId = testNote.id
         notesViewModel.loadSavedNote()
-        flow.emit(testNote)
 
         // verify the repo method is called for editing note
         verify(mockRepository, times(1)).fetchNote(testNote.id)

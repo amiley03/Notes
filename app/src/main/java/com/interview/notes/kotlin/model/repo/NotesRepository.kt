@@ -10,4 +10,8 @@ interface NotesRepository {
     suspend fun fetchNote(noteId: String): Note
 
     suspend fun getAllNotes(): Flow<List<Note>>
+
+    suspend fun deleteNote(note: Note)
+
+    suspend fun fetchNoteRange(start: Int, end: Int): List<Note>?
 }

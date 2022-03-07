@@ -13,8 +13,8 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import javax.inject.Singleton
 
-@InstallIn(SingletonComponent::class)
 @Module
+@InstallIn(SingletonComponent::class)
 class AppDatabaseModule {
     @Provides
     fun provideNoteDao(appDatabase: AppDatabase): NoteDao {

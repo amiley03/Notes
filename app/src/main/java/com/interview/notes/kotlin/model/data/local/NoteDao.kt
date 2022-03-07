@@ -10,8 +10,11 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface NoteDao {
-    @Query("SELECT * FROM notes")
+    @Query("SELECT * FROM notes ORDER BY timeStamp DESC")
     fun getAllNotes(): Flow<List<Note>>
+
+    @Query("SELECT * FROM notes ORDER BY timeStamp DESC LIMIT :start, :end")
+    fun getNotes(start: Int = 0, end: Int): Flow<List<Note>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertNote(note: Note)
@@ -26,7 +29,7 @@ interface NoteDao {
     fun findByTitle(title: String): Flow<Note>
 
     @Delete
-    fun delete(user: Note)
+    fun delete(note: Note)
 
     @Query("SELECT * FROM notes WHERE id IS :noteId LIMIT 1")
     fun findById(noteId: String): Note

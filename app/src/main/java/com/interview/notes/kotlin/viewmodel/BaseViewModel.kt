@@ -39,7 +39,7 @@ sealed class UIState {
     object Loaded : UIState()
     object Exit : UIState()
     object NewNote : UIState()
-    object NoteList : UIState()
+    class Deleted(val noteItem: NoteItemViewModel) : UIState()
     class EditNote(val noteItem: NoteItemViewModel) : UIState()
     class Updated(val noteItem: NoteItemViewModel) : UIState()
     class Error(val errorMessageId: Int) : UIState()
